@@ -1,0 +1,13 @@
+{
+    "servers": {
+        "my-mcp-server-38b22a2a": {
+            "type": "stdio",
+            "command": "dotnet",
+            "args": [
+                "run",
+                "--project",
+                "C:\\Repos\\MCPSample\\MCPSample\\MCPSample.csproj"
+            ]
+        }
+    }
+}
