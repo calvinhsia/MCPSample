@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
+using System.Text.Json;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Logging.AddConsole(consoleLogOptions =>
@@ -25,8 +26,8 @@ public static class EchoTool
 
     [McpServerTool, Description("Echoes the message length back to the client.")]
     public static string EchoLength(string message) => $"hello {message.Length}";
-    
-    [McpServerTool, Description("Gets a random english word")]
+
+    [McpServerTool, Description("Gets a random English word")]
     public static string RandomWord()
     {
         var dict = new DictionaryLib.DictionaryLib(DictionaryLib.DictionaryType.Small);
@@ -36,4 +37,18 @@ public static class EchoTool
         // Use Console.Error.WriteLine for debugging instead, or remove entirely
         return randWord;
     }
+    
+    [McpServerTool, Description("Gets the words made from the letters of a word")]
+    public static string GetSubWords(string word)
+    {
+        var dict = new DictionaryLib.DictionaryLib(DictionaryLib.DictionaryType.Small);
+        var subWords = dict.GenerateSubWords(word);
+        // convert to JSON
+        var json = JsonSerializer.Serialize(subWords);
+        Console.Error.WriteLine($"From MyMCPServer GetSubWords word: {word} subWords: {json}");
+        // Don't use Console.WriteLine in MCP servers - it interferes with protocol communication
+        // Use Console.Error.WriteLine for debugging instead, or remove entirely
+        return json;
+    }
+    
 }
