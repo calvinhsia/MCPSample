@@ -8,6 +8,29 @@
                 "--project",
                 "C:\\Repos\\MCPSample\\MCPSample\\MCPSample.csproj"
             ]
+        },
+        "xxkusto-mcp": {
+            "type": "stdio",
+            "command": "uvx",
+            "args": [
+                "kusto-mcp"
+            ],
+            "env": {
+                "KUSTO_SERVICE_URI": "${input:kusto_service_uri}",
+                "KUSTO_DATABASE": "${input:kusto_database}"
+            }
+        },
+    },
+    "inputs": [
+        {
+            "id": "kusto_service_uri",
+            "type": "promptString",
+            "description": "Kusto Service URI"
+        },
+        {
+            "id": "kusto_database",
+            "type": "promptString",
+            "description": "Kusto Database (optional)"
         }
-    }
+    ]
 }

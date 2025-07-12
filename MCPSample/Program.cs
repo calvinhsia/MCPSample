@@ -9,7 +9,7 @@ using Kusto.Data;
 using Kusto.Data.Net.Client;
 
 //Main();
-EchoTool.LogIntoKusto();
+//EchoTool.LogIntoKusto();
 var builder = Host.CreateApplicationBuilder(args);
 builder.Logging.AddConsole(consoleLogOptions =>
 {
@@ -31,7 +31,7 @@ public static class EchoTool
     [McpServerTool, Description("Echoes the message length back to the client.")]
     public static string EchoLength(string message) => $"hello {message.Length}";
 
-    [McpServerTool, Description("Gets a random English word")]
+    [McpServerTool(ReadOnly = true), Description("Gets a random English word")]
     public static string RandomWord()
     {
         var dict = new DictionaryLib.DictionaryLib(DictionaryLib.DictionaryType.Small);
@@ -42,7 +42,7 @@ public static class EchoTool
         return randWord;
     }
 
-    [McpServerTool, Description("Gets the words made from the letters of a word")]
+    [McpServerTool(ReadOnly = true), Description("Gets the words made from the letters of a word")]
     public static string GetSubWords(string word)
     {
         var dict = new DictionaryLib.DictionaryLib(DictionaryLib.DictionaryType.Small);
@@ -54,14 +54,30 @@ public static class EchoTool
         // Use Console.Error.WriteLine for debugging instead, or remove entirely
         return json;
     }
-    [McpServerTool, Description("Log into Kusto and query Fabric Telemetry for event names and counts")]
-    public static string LogIntoKustoAndGetTelemetry()
+    [McpServerTool(ReadOnly = true), Description("Log into Kusto and query Fabric Telemetry for event names and counts")]
+    public static string LogIntoKustoAndGetTelemetry(DateTime startDate, DateTime endDate, string? coreVersion = null, string? udfVersion = null)
     {
-        var query = @"cluster('https://DDTelvscode.kusto.windows.net').database('VSCodeExt').RawEventsVSCodeExt
-    | where ExtensionName == 'fabric.vscode-fabric' or  ExtensionName  == 'fabric.vscode-fabric-functions'
-    | summarize count() by EventName
-    | order  by count_ desc
-";
+        var coreVersionFilter = string.IsNullOrEmpty(coreVersion) ? "dynamic(null)" : $"dynamic([\"{coreVersion}\"])";
+        var udfVersionFilter = string.IsNullOrEmpty(udfVersion) ? "dynamic(null)" : $"dynamic([\"{udfVersion}\"])";
+        
+        var query = $"""
+            let _endTime = datetime({endDate:yyyy-MM-ddTHH:mm:ssZ});
+            let _startTime = datetime({startDate:yyyy-MM-ddTHH:mm:ssZ});
+            let _CoreVersion = {coreVersionFilter};
+            let _UDFVersion = {udfVersionFilter};
+            cluster('https://DDTelvscode.kusto.windows.net').database('VSCodeExt').RawEventsVSCodeExt
+            | where ServerTimestamp between (['_startTime'] .. ['_endTime']) // Time range filtering
+            | where ExtensionName == 'fabric.vscode-fabric' or  ExtensionName  == 'fabric.vscode-fabric-functions'
+            | where iif(ExtensionName == 'fabric.vscode-fabric', (isnull(_CoreVersion) or ExtensionVersion in (_CoreVersion)), (isnull(_UDFVersion) or ExtensionVersion in (_UDFVersion)))
+            | summarize count() by EventName
+            | order  by count_ desc
+        """;
+        Console.Error.WriteLine($"From MyMCPServer LogIntoKustoAndGetTelemetry startDate: {startDate} endDate: {endDate}\n{query}");
+//         var queryx = $@"cluster('https://DDTelvscode.kusto.windows.net').database('VSCodeExt').RawEventsVSCodeExt
+//     | where ExtensionName == 'fabric.vscode-fabric' or  ExtensionName  == 'fabric.vscode-fabric-functions'
+//     | summarize count() by EventName
+//     | order  by count_ desc
+// ";
         var result = queryKusto(query);
         return result;
     }
@@ -69,6 +85,7 @@ public static class EchoTool
     [McpServerTool, Description("Gets common Fabric extension errors")]
     public static string GetFabricCommonErrors()
     {
+        Console.Error.WriteLine("From MyMCPServer GetFabricCommonErrors");
         var query = """
             cluster('https://DDTelvscode.kusto.windows.net').database('VSCodeExt').RawEventsVSCodeExt
             | where ExtensionName == 'fabric.vscode-fabric' or ExtensionName == 'fabric.vscode-fabric-functions'
@@ -89,8 +106,21 @@ public static class EchoTool
         return result;
     }
 
+    [McpServerTool(ReadOnly = true), Description("Query Kusto for VSCode extension telemetry")]
+    public static string QueryKusto(string query)
+    {
+        Console.Error.WriteLine($"From MyMCPServer QueryKusto query: {query}");
+        var result = queryKusto(query);
+        return result;
+    }
+
     private static string queryKusto(string query)
     {
+        // query = """
+        //     cluster('https://DDTelvscode.kusto.windows.net').database('VSCodeExt').RawEventsVSCodeExt
+        //     | summarize Count()
+        // """;
+        // throw new NotImplementedException();
         // This method is not used in the current implementation, but can be used for custom queries
         var kcsb = new KustoConnectionStringBuilder("https://DDTelvscode.kusto.windows.net")
             .WithAadUserPromptAuthentication();
@@ -112,33 +142,4 @@ public static class EchoTool
             return JsonSerializer.Serialize(results);
         }
     }
-
-    public static void LogIntoKusto()
-    {
-        // cluster('https://DDTelvscode.kusto.windows.net').database('VSCodeExt').RawEventsVSCodeExt 
-        var kcsb = new KustoConnectionStringBuilder("https://DDTelvscode.kusto.windows.net")
-            .WithAadUserPromptAuthentication();
-        using (var KustoClient = KustoClientFactory.CreateCslQueryProvider(kcsb))
-        {
-            var databaseName = "VSCodeExt";
-            var query = """
-                cluster('https://DDTelvscode.kusto.windows.net').database('VSCodeExt').RawEventsVSCodeExt 
-                | where ExtensionName == 'fabric.vscode-fabric' or ExtensionName == 'fabric.vscode-fabric-functions'
-                | summarize count() by EventName
-                | order by count_ desc
-                """;
-            using var reader = KustoClient.ExecuteQuery(databaseName, query, null);
-            while (reader.Read())
-            {
-                // Process each row of the result
-                for (int i = 0; i < reader.FieldCount; i++)
-                {
-                    Console.Error.Write($"{reader.GetName(i)}: {reader.GetValue(i)} ");
-                }
-                Console.Error.WriteLine();
-            }
-        }
-        // Use queryProvider to execute queries as needed
-    }
-
 }

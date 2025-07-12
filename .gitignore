@@ -23,8 +23,9 @@ bld/
 .vs/
 
 # Visual Studio Code
-.vscode/
+.vscode/*
 !.vscode/mcp.json
+!.vscode/tasks.json
 
 # User-specific files
 *.rsuser

@@ -10,9 +10,11 @@
 
   <ItemGroup>
     <PackageReference Include="DictionaryLib_Calvin_Hsia" Version="1.0.7" />
+
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.6" />
     <PackageReference Include="ModelContextProtocol" Version="0.3.0-preview.1" />
     <PackageReference Include="System.Text.Json" Version="9.0.6" />
+    
     <PackageReference Include="Microsoft.Azure.Kusto.Data" Version="13.0.2" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="13.0.2" />
     <PackageReference Include="Microsoft.Azure.Kusto.Language" Version="12.0.0" />
