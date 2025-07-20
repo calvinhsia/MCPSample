@@ -25,11 +25,6 @@ await builder.Build().RunAsync();
 [McpServerToolType]
 public static class EchoTool
 {
-    [McpServerTool, Description("Echoes the message back to the client.")]
-    public static string Echo(string message) => $"hello {message}";
-
-    [McpServerTool, Description("Echoes the message length back to the client.")]
-    public static string EchoLength(string message) => $"hello {message.Length}";
 
     [McpServerTool(ReadOnly = true), Description("Gets a random English word")]
     public static string RandomWord()
@@ -54,6 +49,7 @@ public static class EchoTool
         // Use Console.Error.WriteLine for debugging instead, or remove entirely
         return json;
     }
+
     [McpServerTool(ReadOnly = true), Description("Log into Kusto and query Fabric Telemetry for event names and counts")]
     public static string LogIntoKustoAndGetTelemetry(DateTime startDate, DateTime endDate, string? coreVersion = null, string? udfVersion = null)
     {
@@ -116,30 +112,39 @@ public static class EchoTool
 
     private static string queryKusto(string query)
     {
-        // query = """
-        //     cluster('https://DDTelvscode.kusto.windows.net').database('VSCodeExt').RawEventsVSCodeExt
-        //     | summarize Count()
-        // """;
-        // throw new NotImplementedException();
-        // This method is not used in the current implementation, but can be used for custom queries
-        var kcsb = new KustoConnectionStringBuilder("https://DDTelvscode.kusto.windows.net")
-            .WithAadUserPromptAuthentication();
-        using (var KustoClient = KustoClientFactory.CreateCslQueryProvider(kcsb))
+        try
         {
-            var databaseName = "VSCodeExt";
-            using var reader = KustoClient.ExecuteQuery(databaseName, query, null);
-            var results = new List<string>();
-            while (reader.Read())
+            // query = """
+            //     cluster('https://DDTelvscode.kusto.windows.net').database('VSCodeExt').RawEventsVSCodeExt
+            //     | summarize Count()
+            // """;
+            // throw new NotImplementedException();
+            // This method is not used in the current implementation, but can be used for custom queries
+            var kcsb = new KustoConnectionStringBuilder("https://DDTelvscode.kusto.windows.net")
+                .WithAadUserPromptAuthentication();
+            using (var KustoClient = KustoClientFactory.CreateCslQueryProvider(kcsb))
             {
-                // Process each row of the result
-                var row = new Dictionary<string, object>();
-                for (int i = 0; i < reader.FieldCount; i++)
+                var databaseName = "VSCodeExt";
+                using var reader = KustoClient.ExecuteQuery(databaseName, query, null);
+                var results = new List<string>();
+                while (reader.Read())
                 {
-                    row[reader.GetName(i)] = reader.GetValue(i);
+                    // Process each row of the result
+                    var row = new Dictionary<string, object>();
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        row[reader.GetName(i)] = reader.GetValue(i);
+                    }
+                    results.Add(JsonSerializer.Serialize(row));
                 }
-                results.Add(JsonSerializer.Serialize(row));
+                return JsonSerializer.Serialize(results);
             }
-            return JsonSerializer.Serialize(results);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error executing Kusto query: {ex.Message}");
+            var errorResult = new { error = ex.Message, type = ex.GetType().Name };
+            return JsonSerializer.Serialize(errorResult);
         }
     }
 }
