@@ -8,8 +8,6 @@ using System.Text.Json;
 using Kusto.Data;
 using Kusto.Data.Net.Client;
 
-//Main();
-//EchoTool.LogIntoKusto();
 var builder = Host.CreateApplicationBuilder(args);
 builder.Logging.AddConsole(consoleLogOptions =>
 {
@@ -23,7 +21,7 @@ builder.Services
 await builder.Build().RunAsync();
 
 [McpServerToolType]
-public static class EchoTool
+public static class MyMCPSampleClass
 {
 
     [McpServerTool(ReadOnly = true), Description("Gets a random English word")]

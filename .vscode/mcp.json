@@ -9,15 +9,17 @@
                 "C:\\Repos\\MCPSample\\MCPSample\\MCPSample.csproj"
             ]
         },
-        "xxkusto-mcp": {
+        "xxxkusto-mcp": {
             "type": "stdio",
             "command": "uvx",
             "args": [
                 "kusto-mcp"
             ],
             "env": {
-                "KUSTO_SERVICE_URI": "${input:kusto_service_uri}",
-                "KUSTO_DATABASE": "${input:kusto_database}"
+                "KUSTO_SERVICE_URI": "https://DDTelvscode.kusto.windows.net",
+                "KUSTO_DATABASE": "DDTelvscode",
+                "KUSTO_SERVICE_URIxx": "${input:kusto_service_uri}",
+                "KUSTO_DATABASExx": "${input:kusto_database}"
             }
         },
     },
